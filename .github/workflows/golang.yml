@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '*' # Ejecutar el flujo de trabajo cuando se haga push a cualquier rama
+    paths:
+      - '**.go'  # Ejecutar el flujo de trabajo solo cuando se modifiquen archivos .go
+  pull_request:
+    paths:
+      - '**.go'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.17'
+
+    - name: Check for Go files
+      run: |
+        if [ -z "$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- '**.go')" ]; then
+          echo "No Go files modified, skipping workflow."
+          exit 0
+        fi
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: go test -v ./...
+
+    - name: Run linters
+      run: golangci-lint run ./...
+
+    - name: Code coverage
+      run: go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
