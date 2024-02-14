@@ -3,9 +3,9 @@ name: CI
 on:
   push:
     branches:
-      - '*' # Ejecutar el flujo de trabajo cuando se haga push a cualquier rama
+      - '*'
     paths:
-      - '**.go'  # Ejecutar el flujo de trabajo solo cuando se modifiquen archivos .go
+      - '**.go'
   pull_request:
     paths:
       - '**.go'
@@ -36,8 +36,19 @@ jobs:
     - name: Run tests
       run: go test -v ./...
 
+    - name: Install linters
+      run: |
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+        go install github.com/mgechev/revive@latest
+        go install golang.org/x/lint/golint@latest
+        go install honnef.co/go/tools/cmd/staticcheck@latest
+
     - name: Run linters
-      run: golangci-lint run ./...
+      run: |
+        golangci-lint run ./...
+        revive -config revive.toml -formatter friendly ./...
+        golint ./...
+        staticcheck ./...
 
     - name: Code coverage
       run: go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
